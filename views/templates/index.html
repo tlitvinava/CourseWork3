@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Платформа поиска кофеен</title>
+</head>
+<body>
+  <h1>Платформа поиска кофеен</h1>
+
+  <h2>Регистрация пользователя</h2>
+  <form id="registerForm">
+    <label for="username">Имя пользователя:</label>
+    <input type="text" id="username" name="username" required>
+    <br>
+    <label for="password">Пароль:</label>
+    <input type="password" id="password" name="password" required>
+    <br>
+    <button type="submit">Зарегистрироваться</button>
+  </form>
+
+  <h2>Добавление кофейни</h2>
+  <form id="coffeeForm">
+    <label for="name">Название:</label>
+    <input type="text" id="name" name="name" required>
+    <br>
+    <label for="address">Адрес:</label>
+    <input type="text" id="address" name="address" required>
+    <br>
+    <label for="price">Цена:</label>
+    <input type="text" id="price" name="price">
+    <br>
+    <label for="wifi">Wi-Fi:</label>
+    <input type="text" id="wifi" name="wifi">
+    <br>
+    <button type="submit">Добавить кофейню</button>
+  </form>
+
+  <h2>Список кофеен</h2>
+  <button id="getCoffeeShops">Получить список кофеен</button>
+  <div id="coffeeList"></div>
+
+  <script>
+    // Отправка запроса на регистрацию пользователя
+    document.getElementById('registerForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      };
+      fetch('/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => alert('Пользователь зарегистрирован: ' + JSON.stringify(data)))
+      .catch(error => console.error('Ошибка:', error));
+    });
+
+    // Отправка запроса на добавление новой кофейни
+    document.getElementById('coffeeForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const data = {
+        name: document.getElementById('name').value,
+        address: document.getElementById('address').value,
+        price: document.getElementById('price').value,
+        wifi: document.getElementById('wifi').value
+      };
+      fetch('/coffee_shops', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => alert('Кофейня добавлена: ' + JSON.stringify(data)))
+      .catch(error => console.error('Ошибка:', error));
+    });
+
+    // Получение списка кофеен
+    document.getElementById('getCoffeeShops').addEventListener('click', function() {
+      fetch('/coffee_shops')
+      .then(response => response.json())
+      .then(data => {
+        const coffeeListDiv = document.getElementById('coffeeList');
+        coffeeListDiv.innerHTML = '';
+        data.forEach(shop => {
+          let div = document.createElement('div');
+          div.textContent = JSON.stringify(shop);
+          coffeeListDiv.appendChild(div);
+        });
+      })
+      .catch(error => console.error('Ошибка:', error));
+    });
+  </script>
+</body>
+</html>

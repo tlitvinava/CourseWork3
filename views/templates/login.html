@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Вход в систему</title>
+</head>
+<body>
+  <h1>Вход в систему</h1>
+  <form id="loginForm">
+    <label for="username">Имя пользователя:</label>
+    <input type="text" id="username" name="username" required>
+    <br>
+    <label for="password">Пароль:</label>
+    <input type="password" id="password" name="password" required>
+    <br>
+    <button type="submit">Войти</button>
+  </form>
+  <p>
+    Еще не зарегистрированы? <a href="/registration">Зарегистрироваться</a>
+  </p>
+  
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', function(event) {
+      event.preventDefault();
+      const data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      };
+      fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => { throw new Error(text) });
+        }
+        return response.json();
+      })
+      .then(res => {
+        alert(res.message);
+        window.location.href = res.redirect;
+      })
+      .catch(error => {
+        alert("Ошибка: " + error.message);
+        console.error('Ошибка:', error);
+      });
+    });
+  </script>
+</body>
+</html>

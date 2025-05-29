@@ -7,6 +7,8 @@ import re
 import http.cookies
 import uuid
 from urllib.parse import urlparse, parse_qs
+from modules.repository.mongo_repository import MongoRepository
+from modules.models.user import User
 
 from modules.services.user_service import UserService
 from modules.services.yandex_api_service import YandexAPIService
@@ -170,16 +172,20 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         username = self.get_current_user()
 
-        protected_paths = ['/',]
+        protected_paths = ['/','index','home']
 
         if self.path.startswith('/login'):
             self.render_login()
+        elif self.path.startswith('/registration'):
+            self.render_registration()
         elif self.path == '/logout':
             self.logout()
         elif self.path in protected_paths:
             if username:
                 if self.path == '/':
                     self.render_index()
+                elif self.path == '/home':
+                    self.render_home()
             else:
                 self.redirect('/login')
         else:
@@ -206,6 +212,13 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         context = {
             'username': 'Алексей',
             'title': 'Добро пожаловать!'
+        }
+        self.serve_template(filepath, context)
+
+    def render_registration(self):
+        filepath = os.path.join(PAGES_DIR, 'registration.html')
+        context = {
+            'title': 'Регистрация нового пользователя'
         }
         self.serve_template(filepath, context)
 
@@ -241,11 +254,15 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/login':
             self.handle_login()
+        elif self.path == '/registration':
+            self.handle_registration()
         else:
             self.respond(404, "<h1>404</h1><p>Страница не найдена</p>")
 
 
-    def handle_login(self):
+    def handle_registration(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
         length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(length).decode('utf-8')
         try:
@@ -254,21 +271,56 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.respond_json({'success': False, 'message': 'Некорректные данные'}, 400)
             return
 
-        username = data.get('username', '')
-        password = data.get('password', '')
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+        phone = data.get('phone', '').strip()
+        email = data.get('email', '').strip()
+        region = data.get('region', '').strip()
 
-        if users.get(username) == password:
-            session_id = str(uuid.uuid4())
-            sessions[session_id] = username
-            # Отправляем куку и JSON с редиректом
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/')
-            self.end_headers()
-            response = {'success': True, 'message': 'Успешный вход', 'redirect': '/'}
-            self.wfile.write(json.dumps(response).encode('utf-8'))
-        else:
+        if not (username and password and phone and email and region):
+            self.respond_json({'success': False, 'message': 'Все поля обязательны'}, 400)
+            return
+
+        if region.lower() != 'минск':
+            self.respond_json({'success': False, 'message': 'В данном регионе приложение не работает'}, 400)
+            return
+
+        if self.mongo_repo.get_user_by_username(username) is not None:
+            self.respond_json({'success': False, 'message': 'Пользователь с таким именем уже существует'}, 400)
+            return
+
+        user = User(username=username, password=password, phone=phone, email=email, region=region)
+        self.mongo_repo.add_user(user)
+
+        self.respond_json({'success': True, 'message': 'Регистрация прошла успешно', 'redirect': '/login'})
+
+    def handle_login(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length).decode('utf-8')
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self.respond_json({'success': False, 'message': 'Некорректные данные'}, 400)
+            return
+
+        username = data.get('username', '').strip()
+        password = data.get('password', '').strip()
+
+        user = self.mongo_repo.get_user_by_username(username)
+        if user is None or user.password != password:
             self.respond_json({'success': False, 'message': 'Неверный логин или пароль'}, 401)
+            return
+
+        session_id = str(uuid.uuid4())
+        sessions[session_id] = username
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Set-Cookie', f'session_id={session_id}; HttpOnly; Path=/')
+        self.end_headers()
+        response = {'success': True, 'message': 'Успешный вход', 'redirect': '/'}
+        self.wfile.write(json.dumps(response).encode('utf-8'))
 
     def respond_json(self, data, status=200):
         self.send_response(status)

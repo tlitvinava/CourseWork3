@@ -6,6 +6,7 @@ import os
 import re
 import http.cookies
 import uuid
+import urllib.parse
 from urllib.parse import urlparse, parse_qs
 from modules.repository.mongo_repository import MongoRepository
 from modules.models.user import User
@@ -172,7 +173,9 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         username = self.get_current_user()
 
-        protected_paths = ['/','index','home']
+        protected_paths = ['/','/index','/home']
+
+        protected_paths = ['/', '/index', '/home']
 
         if self.path.startswith('/login'):
             self.render_login()
@@ -180,10 +183,12 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.render_registration()
         elif self.path == '/logout':
             self.logout()
+        elif self.path.startswith('/overpass_coffee_shops'):
+                self.get_overpass_coffee_shops()
         elif self.path in protected_paths:
             if username:
                 if self.path == '/':
-                    self.render_index()
+                    self.render_home()
                 elif self.path == '/home':
                     self.render_home()
             else:
@@ -206,6 +211,37 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             'title': 'Добро пожаловать!'
         }
         self.serve_template(filepath, context)
+
+
+    def get_overpass_coffee_shops(self):
+        query = """
+        [out:json];
+        (
+        node["amenity"~"cafe|restaurant|fast_food"](around:9000,53.9,27.56667);
+        way["amenity"~"cafe|restaurant|fast_food"](around:9000,53.9,27.56667);
+        node["shop"="coffee"](around:9000,53.9,27.56667);
+        way["shop"="coffee"](around:9000,53.9,27.56667);
+        );
+        out center;
+        """
+        encoded_query = urllib.parse.quote(query)
+        url = f"https://overpass-api.de/api/interpreter?data={encoded_query}"
+
+        try:
+            with urllib.request.urlopen(url) as response:
+                result = json.loads(response.read())
+                print(f"Найдено кофеен: {len(result.get('elements', []))}")
+                self.respond_json({
+                    "message": f"Найдено кофеен: {len(result.get('elements', []))}",
+                    "results": result
+                })
+        except Exception as e:
+            print(e)
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
 
     def render_login(self):
         filepath = os.path.join(PAGES_DIR, 'login.html')
@@ -256,8 +292,59 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.handle_login()
         elif self.path == '/registration':
             self.handle_registration()
+        elif self.path == '/coffee_shops':
+            self.handle_add_coffee_shop()
+        elif self.path == '/add_favorite':
+            self.handle_add_favorite()
         else:
             self.respond(404, "<h1>404</h1><p>Страница не найдена</p>")
+
+
+    def handle_add_favorite(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
+
+        username = self.get_current_user()
+        if not username:
+            self.send_response(401)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"error": "Unauthorized"}')
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+        try:
+            data = json.loads(body)
+            coffee_shop = data.get('coffee_shop')
+            if not coffee_shop:
+                raise ValueError("Missing coffee_shop in request body")
+
+            user = self.mongo_repo.get_user_by_username(username)
+            if not user:
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(b'{"error": "User not found"}')
+                return
+
+            # Проверяем, есть ли кофейня уже в избранном
+            if coffee_shop in user.favorites:
+                message = "Кофейня уже в избранном"
+            else:
+                self.mongo_repo.add_favorite(user.id, coffee_shop)
+                message = "Добавлено в избранное"
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"message": message}).encode('utf-8'))
+
+        except Exception as e:
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
 
 
     def handle_registration(self):
@@ -322,9 +409,49 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         response = {'success': True, 'message': 'Успешный вход', 'redirect': '/'}
         self.wfile.write(json.dumps(response).encode('utf-8'))
 
+    def handle_add_coffee_shop(self):
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length).decode('utf-8')
+        try:
+            data = json.loads(body)
+        except json.JSONDecodeError:
+            self.respond_json({'success': False, 'message': 'Некорректные данные'}, 400)
+            return
+
+        # Проверяем обязательные поля
+        name = data.get('name')
+        address = data.get('address')
+        if not name or not address:
+            self.respond_json({'success': False, 'message': 'Необходимо указать название и адрес'}, 400)
+            return
+
+        price = data.get('price', '')
+        wifi = data.get('wifi', '')
+
+        # Пример объекта кофейни
+        coffee_shop = {
+            'name': name,
+            'address': address,
+            'price': price,
+            'wifi': wifi
+        }
+
+        try:
+            # Если у тебя есть репозиторий, то вызывай метод сохранения, например:
+            self.mongo_repo.add_coffee_shop(coffee_shop)
+            # Если репозитория нет, можно добавить в глобальный список или аналог
+            # coffee_shops.append(coffee_shop)
+        except Exception as e:
+            self.respond_json({'success': False, 'message': f'Ошибка при сохранении: {str(e)}'}, 500)
+            return
+
+        self.respond_json({'success': True, 'message': 'Кофейня добавлена', 'coffee_shop': coffee_shop}, 201)
+
+
     def respond_json(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Access-Control-Allow-Origin', '*')  # Разрешаем кросс-доменные запросы
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
 

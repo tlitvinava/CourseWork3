@@ -15,43 +15,135 @@
   <input type="text" id="searchInput" placeholder="Введите название кофейни">
   <button id="searchButton">Поиск</button>
   
+  <div id="resultsHedder"></div>
   <div id="results"></div>
   
-  <script>
-    document.getElementById('searchButton').addEventListener('click', function() {
-      const query = document.getElementById('searchInput').value;
-      if (!query) {
-        alert("Введите название кофейни");
-        return;
-      }
-      fetch('/yandex_coffee_shops?query=' + encodeURIComponent(query))
-        .then(response => {
-          if (!response.ok) {
-            throw new Error("Ошибка при выполнении запроса");
-          }
-          return response.json();
-        })
-        .then(data => {
-          const resultsDiv = document.getElementById('results');
-          resultsDiv.innerHTML = '';
-          // Выводим сообщение, сформированное на сервере
-          const message = data.message;
-          resultsDiv.innerHTML = '<p>' + message + '</p>';
-          // Дополнительно можно вывести список найденных кофеен:
-          if (data.results && data.results.features && data.results.features.length > 0) {
-            const ul = document.createElement('ul');
-            data.results.features.forEach(function(feature) {
-              const li = document.createElement('li');
-              li.textContent = feature.properties.name;
-              ul.appendChild(li);
-            });
-            resultsDiv.appendChild(ul);
-          }
-        })
-        .catch(err => {
-          alert("Ошибка: " + err.message);
-        });
-    });
-  </script>
 </body>
+
+<style>
+  #results {
+    display: flex;
+    flex-wrap: wrap;       /* чтобы карточки переносились на новую строку */
+    gap: 15px;             /* расстояние между карточками */
+  }
+
+  .coffee-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    width: 250px;          /* фиксированная ширина карточки */
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .coffee-card h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+  }
+
+  .coffee-card button {
+    margin-top: 10px;
+    align-self: flex-start;
+  }
+</style>
+
+<script>
+  document.getElementById('searchButton').addEventListener('click', function () {
+    const resultsDiv = document.getElementById('results');
+    const resultsHedderDiv = document.getElementById('resultsHedder');
+    resultsDiv.innerHTML = ''; // очищаем
+    resultsHedderDiv.innerHTML = ''
+
+    fetch('/overpass_coffee_shops')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Ошибка при выполнении запроса");
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.error) {
+          resultsDiv.innerHTML = '<p>Ошибка: ' + data.error + '</p>';
+          return;
+        }
+
+        resultsHedderDiv.innerHTML = '<p>' + data.message + '</p>';
+        if (data.results && data.results.elements && data.results.elements.length > 0) {
+          data.results.elements.forEach(function (element) {
+            const name = element.tags && element.tags.name ? element.tags.name : 'Без названия';
+            const street = element.tags && element.tags['addr:street'] ? element.tags['addr:street'] : '';
+            const house = element.tags && element.tags['addr:housenumber'] ? element.tags['addr:housenumber'] : '';
+            const phone = element.tags && element.tags['contact:phone'] ? element.tags['contact:phone'] : 
+                          (element.tags && element.tags['phone'] ? element.tags['phone'] : '');
+            const website = element.tags && element.tags['contact:website'] ? element.tags['contact:website'] :
+                            (element.tags && element.tags['website'] ? element.tags['website'] : '');
+
+            // Создаем карточку с классом
+            const card = document.createElement('div');
+            card.className = 'coffee-card';
+
+            const title = document.createElement('h3');
+            title.textContent = name;
+            card.appendChild(title);
+
+            if (street || house) {
+              const address = document.createElement('p');
+              address.textContent = 'Адрес: ' + street + (house ? ', ' + house : '');
+              card.appendChild(address);
+            }
+
+            if (phone) {
+              const phoneP = document.createElement('p');
+              phoneP.textContent = 'Телефон: ' + phone;
+              card.appendChild(phoneP);
+            }
+
+            if (website) {
+              const link = document.createElement('a');
+              link.href = website.startsWith('http') ? website : 'http://' + website;
+              link.textContent = 'Сайт';
+              link.target = '_blank';
+              card.appendChild(link);
+            }
+
+            // Кнопка "В избранное"
+            const favButton = document.createElement('button');
+            favButton.textContent = 'В избранное';
+            favButton.onclick = function() {
+              fetch('/add_favorite', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ coffee_shop: element })  // Оборачиваем объект в ключ coffee_shop
+              })
+              .then(res => {
+                if (!res.ok) throw new Error('Ошибка при добавлении в избранное');
+                return res.json();
+              })
+              .then(data => {
+                alert(data.message);  // Показываем сообщение из ответа сервера
+              })
+              .catch(err => {
+                alert(err.message);
+              });
+            };
+
+            card.appendChild(favButton);
+
+            resultsDiv.appendChild(card);
+          });
+        } else {
+          resultsHedderDiv.innerHTML += '<p>Кофейни не найдены</p><br><br><br>';
+        }
+      })
+      .catch(err => {
+        alert("Ошибка: " + err.message);
+      });
+  });
+</script>
+
+
+
 </html>

@@ -41,8 +41,9 @@ class MongoRepository:
             if coffee_shop not in user.favorites:
                 user.favorites.append(coffee_shop)
                 self.update_user(user)
-            return user
-        return None
+                return True  # Добавлено
+            return False  # Уже есть
+        return None  # Пользователь не найден
 
     def remove_favorite(self, user_id, coffee_shop):
         user = self.get_user_by_id(user_id)

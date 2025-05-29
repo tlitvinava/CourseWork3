@@ -3,8 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <title>Домашняя страница</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #results { margin-top: 20px; }
+  </style>
 </head>
 <body>
   <h1>Добро пожаловать!</h1>
+  
+  <h2>Поиск кофейни</h2>
+  <input type="text" id="searchInput" placeholder="Введите название кофейни">
+  <button id="searchButton">Поиск</button>
+  
+  <div id="results"></div>
+  
+  <script>
+    document.getElementById('searchButton').addEventListener('click', function() {
+      const query = document.getElementById('searchInput').value;
+      if (!query) {
+        alert("Введите название кофейни");
+        return;
+      }
+      fetch('/yandex_coffee_shops?query=' + encodeURIComponent(query))
+        .then(response => {
+          if (!response.ok) {
+            throw new Error("Ошибка при выполнении запроса");
+          }
+          return response.json();
+        })
+        .then(data => {
+          const resultsDiv = document.getElementById('results');
+          resultsDiv.innerHTML = '';
+          // Выводим сообщение, сформированное на сервере
+          const message = data.message;
+          resultsDiv.innerHTML = '<p>' + message + '</p>';
+          // Дополнительно можно вывести список найденных кофеен:
+          if (data.results && data.results.features && data.results.features.length > 0) {
+            const ul = document.createElement('ul');
+            data.results.features.forEach(function(feature) {
+              const li = document.createElement('li');
+              li.textContent = feature.properties.name;
+              ul.appendChild(li);
+            });
+            resultsDiv.appendChild(ul);
+          }
+        })
+        .catch(err => {
+          alert("Ошибка: " + err.message);
+        });
+    });
+  </script>
 </body>
 </html>

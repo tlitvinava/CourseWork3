@@ -12,149 +12,17 @@ from modules.repository.mongo_repository import MongoRepository
 from modules.models.user import User
 
 from modules.services.user_service import UserService
-from modules.services.yandex_api_service import YandexAPIService
+from modules.services.overpass_api_service import OverpassAPIService
 
 PORT = 8000
 
-# Инициализация глобального пользовательского сервиса
+
 user_service = UserService()
 
-# Ваш API ключ Яндекс API (замените на настоящий)
-YANDEX_API_KEY = "f33e1b69-2a7f-45ca-9397-9ed01c98add7"
-
-'''
-class RequestHandler(http.server.BaseHTTPRequestHandler):
-
-    def serve_file(self, filename, content_type="text/html; charset=utf-8"):
-        try:
-            with open(filename, "rb") as f:
-                content = f.read()
-            self.send_response(200)
-            self.send_header("Content-Type", content_type)
-            self.end_headers()
-            self.wfile.write(content)
-        except Exception as e:
-            self.send_response(500)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            self.wfile.write("Ошибка загрузки файла {}: {}".format(filename, e).encode("utf-8"))
-
-    def do_GET(self):
-        if self.path.startswith("/yandex_coffee_shops"):
-            # Создаем экземпляр сервиса для работы с Яндекс API
-            yandex_service = YandexAPIService(YANDEX_API_KEY)
-            # Разбираем URL, чтобы извлечь параметры запроса
-            parsed_url = urlparse(self.path)
-            qs = parse_qs(parsed_url.query)
-            # Извлекаем значение параметра "query". Если его нет – используем значение по умолчанию "кофейня"
-            query_text = qs.get("query", ["кофейня"])[0]
-        try:
-            # Выполняем поиск, передавая извлеченный запрос
-            data = yandex_service.search_coffee_shops(query=query_text)
-            features = data.get("features", [])
-            if features:
-                # Формируем список найденных названий кофеен
-                names = [
-                    feature.get("properties", {}).get("name", "Без названия")
-                    for feature in features
-                ]
-                message = "Найдены кофейни: " + ", ".join(names)
-            else:
-                message = "Кофейня не найдена для запроса: " + query_text
-            response_obj = {"message": message, "results": data}
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps(response_obj, ensure_ascii=False).encode("utf-8"))
-        except Exception as e:
-            self.send_response(500)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            self.wfile.write("Ошибка получения данных от Яндекс API: {}".format(e).encode("utf-8"))
-    # Обработка других GET-запросов (например, регистрация, вход, домашняя страница)...
-
-    def do_POST(self):
-        # Чтение тела запроса (ожидается формат JSON)
-        content_length = int(self.headers.get("Content-Length", 0))
-        body = self.rfile.read(content_length)
-        try:
-            data = json.loads(body.decode("utf-8"))
-        except json.JSONDecodeError:
-            self.send_response(400)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            self.wfile.write("Неверный формат JSON".encode("utf-8"))
-            return
-
-        if self.path == "/registration":
-            username = data.get("username")
-            password = data.get("password")
-            phone    = data.get("phone")
-            email    = data.get("email")
-            region   = data.get("region")
-            if not (username and password and phone and email and region):
-                self.send_response(400)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.end_headers()
-                self.wfile.write("Все поля обязательны".encode("utf-8"))
-                return
-            if region.lower() != "минск":
-                self.send_response(400)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.end_headers()
-                self.wfile.write("В данном регионе приложение не работает".encode("utf-8"))
-                return
-            try:
-                new_user = user_service.register_user(username, password, phone, email, region)
-            except ValueError as ve:
-                self.send_response(400)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.end_headers()
-                self.wfile.write(str(ve).encode("utf-8"))
-                return
-            response_obj = {"message": "Регистрация прошла успешно", "redirect": "/home"}
-            self.send_response(201)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps(response_obj, ensure_ascii=False).encode("utf-8"))
-
-        elif self.path == "/login":
-            username = data.get("username")
-            password = data.get("password")
-            if not (username and password):
-                self.send_response(400)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.end_headers()
-                self.wfile.write("Необходимо указать username и password".encode("utf-8"))
-                return
-            user = user_service.login_user(username, password)
-            if not user:
-                self.send_response(401)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.end_headers()
-                self.wfile.write("Неверное имя пользователя или пароль".encode("utf-8"))
-                return
-            response_obj = {"message": "Вход выполнен успешно", "redirect": "/home"}
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(json.dumps(response_obj, ensure_ascii=False).encode("utf-8"))
-        else:
-            self.send_response(404)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.end_headers()
-            self.wfile.write("Неизвестный endpoint".encode("utf-8"))
-'''
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # Папка, где лежит main.py
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PAGES_DIR = os.path.join(BASE_DIR, 'views', 'templates')
 
 sessions = {}
-
-users = {
-    "admin": "123",
-    "user": "qwerty"
-}
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):
 
@@ -182,7 +50,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         elif self.path == '/logout':
             self.logout()
         elif self.path.startswith('/overpass_coffee_shops'):
-                self.get_overpass_coffee_shops()
+                self.respond_json(OverpassAPIService.get_overpass_coffee_shops())
         elif self.path in protected_paths:
             if username:
                 if self.path == '/':
@@ -222,11 +90,11 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         coffee_cards = ""
         for coffee in favorites:
             tags = coffee.get('tags', {})
-            user_tags = coffee.get('user_tags', [])  # пользовательские теги (список строк)
+            user_tags = coffee.get('user_tags', [])
             name = tags.get('name', 'Без имени')
             street = tags.get('addr:street', '')
 
-            # Формируем HTML для пользовательских тегов
+
             tags_html = ""
             for tag in user_tags:
                 tags_html += f"<span class='tag'>{tag}</span> "
@@ -318,46 +186,14 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(b'{"error": "User not found"}')
             return
 
-        favorites = user.favorites  # тут список кофеен из mongo
+        favorites = user.favorites
 
-        # Генерируем html с помощью твоей функции
         html = self.generate_favorite_list(username, favorites)
 
         self.send_response(200)
         self.send_header('Content-Type', 'text/html; charset=utf-8')
         self.end_headers()
         self.wfile.write(html.encode('utf-8'))
-
-
-    def get_overpass_coffee_shops(self):
-        query = """
-        [out:json];
-        (
-        node["amenity"~"cafe|restaurant|fast_food"](around:9000,53.9,27.56667);
-        way["amenity"~"cafe|restaurant|fast_food"](around:9000,53.9,27.56667);
-        node["shop"="coffee"](around:9000,53.9,27.56667);
-        way["shop"="coffee"](around:9000,53.9,27.56667);
-        );
-        out center;
-        """
-        encoded_query = urllib.parse.quote(query)
-        url = f"https://overpass-api.de/api/interpreter?data={encoded_query}"
-
-        try:
-            with urllib.request.urlopen(url) as response:
-                result = json.loads(response.read())
-                print(f"Найдено кофеен: {len(result.get('elements', []))}")
-                self.respond_json({
-                    "message": f"Найдено кофеен: {len(result.get('elements', []))}",
-                    "results": result
-                })
-        except Exception as e:
-            print(e)
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Access-Control-Allow-Origin', '*')
-            self.end_headers()
-            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
 
     def render_login(self):
         filepath = os.path.join(PAGES_DIR, 'login.html')
@@ -447,7 +283,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error": "User not found"}')
                 return
 
-            # Вызываем update_tags с одним тегом
             updated_user = self.mongo_repo.update_tags(user.id, coffee_shop, tag)
             if not updated_user:
                 raise ValueError("User or favorite coffee shop not found")
@@ -494,7 +329,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(b'{"error": "User not found"}')
                 return
 
-            # Проверяем, есть ли кофейня уже в избранном
             if coffee_shop in user.favorites:
                 message = "Кофейня уже в избранном"
             else:
@@ -597,7 +431,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
             if friend_username not in user.friends:
                 user.friends.append(friend_username)
-                # Обновляем в базе друзей через mongo_repo
                 self.mongo_repo.update_user_friends(user.id, user.friends)
 
             self.respond_json({"message": "Друг добавлен"}, 200)
@@ -616,7 +449,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.respond_json({'success': False, 'message': 'Некорректные данные'}, 400)
             return
 
-        # Проверяем обязательные поля
         name = data.get('name')
         address = data.get('address')
         if not name or not address:
@@ -626,7 +458,6 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         price = data.get('price', '')
         wifi = data.get('wifi', '')
 
-        # Пример объекта кофейни
         coffee_shop = {
             'name': name,
             'address': address,
@@ -635,10 +466,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         }
 
         try:
-            # Если у тебя есть репозиторий, то вызывай метод сохранения, например:
             self.mongo_repo.add_coffee_shop(coffee_shop)
-            # Если репозитория нет, можно добавить в глобальный список или аналог
-            # coffee_shops.append(coffee_shop)
         except Exception as e:
             self.respond_json({'success': False, 'message': f'Ошибка при сохранении: {str(e)}'}, 500)
             return
@@ -649,7 +477,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
     def respond_json(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
-        self.send_header('Access-Control-Allow-Origin', '*')  # Разрешаем кросс-доменные запросы
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data).encode('utf-8'))
 

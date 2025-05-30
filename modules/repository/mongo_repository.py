@@ -41,9 +41,9 @@ class MongoRepository:
             if coffee_shop not in user.favorites:
                 user.favorites.append(coffee_shop)
                 self.update_user(user)
-                return True  # Добавлено
-            return False  # Уже есть
-        return None  # Пользователь не найден
+                return True
+            return False
+        return None
 
     def remove_favorite(self, user_id, coffee_shop):
         user = self.get_user_by_id(user_id)
@@ -76,18 +76,15 @@ class MongoRepository:
         if not user:
             return None
 
-        # Найти нужную кофейню и получить существующие теги
         existing_tags = []
         for fav in user.favorites:
             if fav.get('id') == coffee_id:
                 existing_tags = fav.get('user_tags', [])
                 break
 
-        # Добавить тег, если его нет
         if new_tag not in existing_tags:
             existing_tags.append(new_tag)
 
-        # Обновляем только user_tags для этой кофейни
         result = self.users_collection.update_one(
             {
                 "id": user_id,

@@ -40,7 +40,6 @@
   <div id="coffeeList"></div>
 
   <script>
-    // Отправка запроса на регистрацию пользователя
     document.getElementById('registerForm').addEventListener('submit', function(event) {
       event.preventDefault();
       const data = {
@@ -59,7 +58,6 @@
       .catch(error => console.error('Ошибка:', error));
     });
 
-    // Отправка запроса на добавление новой кофейни
     document.getElementById('coffeeForm').addEventListener('submit', function(event) {
       event.preventDefault();
       const data = {
@@ -80,7 +78,6 @@
       .catch(error => console.error('Ошибка:', error));
     });
 
-    // Получение списка кофеен
     document.getElementById('getCoffeeShops').addEventListener('click', function() {
       fetch('/coffee_shops')
       .then(response => response.json())

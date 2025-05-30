@@ -4,24 +4,185 @@
   <meta charset="UTF-8" />
   <title>Друзья и их любимые кофейни</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    .coffee-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-    .coffee-card h3 { margin: 0 0 5px 0; }
-    .coffee-card p { margin: 0; color: #555; }
-    .tag {
-      display: inline-block;
-      background: #eef;
-      border-radius: 3px;
-      padding: 2px 6px;
-      margin: 2px 3px 2px 0;
-      font-size: 0.9em;
-    }
-    hr {
-      margin: 30px 0;
-    }
+    :root {
+  --bg: #f7f3f0;
+  --accent: #a9746e;
+  --text-primary: #3e2723;
+  --text-secondary: #5a4a42;
+  --card-bg: #fffaf7;
+  --border-color: #d7cfc8;
+  --tag-bg: #d1c4b2;
+  --tag-text: #4b3a31;
+}
+
+body {
+  background-color: var(--bg);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0 20px 25px 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 40px;
+  font-weight: 700;
+}
+
+#friends-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.friend-block {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px 25px;
+  margin-bottom: 30px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.07);
+}
+
+.friend-block h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--accent);
+  font-weight: 600;
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 6px;
+}
+
+.coffee-card {
+  background-color: white;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.coffee-card h3 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.coffee-card p {
+  margin: 0 0 6px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.tags-container {
+  margin-top: 8px;
+}
+
+.tag {
+  display: inline-block;
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  border-radius: 20px;
+  padding: 5px 12px;
+  margin: 4px 6px 4px 0;
+  font-size: 0.85em;
+  font-weight: 600;
+  user-select: none;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 40px 0;
+}
+
+header {
+  background-color: var(--accent);
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  text-decoration: none;
+  color: white;
+  flex-shrink: 0;
+}
+
+nav {
+  display: flex;
+  gap: 20px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  text-decoration: none;
+}
+
+.auth {
+  flex-shrink: 0;
+}
+
+.auth a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.auth a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+
   </style>
 </head>
 <body>
+    <header>
+        <div class="nav-container">
+          <a href="/" class="logo">CoffeeMap</a>
+      
+          <nav>
+            <a href="/home">Дом</a>
+            <a href="/friends">Друзья</a>
+            <a href="/favorites">Избранное</a>
+          </nav>
+      
+          <div class="auth">
+            <a href="/logout">Выйти</a>
+          </div>
+        </div>
+      </header>
   <h1>Друзья и их любимые кофейни</h1>
   <div id="friends-container">
     {{FRIENDS_GO_HERE}}

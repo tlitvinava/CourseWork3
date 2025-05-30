@@ -47,5 +47,100 @@
       });
     });
   </script>
+  <style>
+    :root {
+  --bg: #f7f3f0;
+  --accent: #a9746e;
+  --text: #3e2723;
+  --input-bg: #f0e6e1;
+  --input-border: #e0d5cd;
+  --button-bg: #a9746e;
+  --button-hover: #8d5c57;
+}
+
+body {
+  background-color: var(--bg);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text);
+  margin: 0;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+h1 {
+  margin-bottom: 30px;
+}
+
+form {
+  background-color: #fffaf7;
+  padding: 30px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.07);
+  width: 320px;
+  box-sizing: border-box;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--input-border);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  font-size: 15px;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+button[type="submit"] {
+  width: 100%;
+  background-color: var(--button-bg);
+  color: white;
+  font-weight: 600;
+  padding: 12px 0;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
+}
+
+button[type="submit"]:hover {
+  background-color: var(--button-hover);
+}
+
+p {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--text);
+  text-align: center;
+}
+
+p a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+p a:hover {
+  text-decoration: underline;
+}
+
+  </style>
 </body>
 </html>

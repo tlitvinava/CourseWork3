@@ -2,7 +2,7 @@
 
 class CoffeeShopRepository:
     def __init__(self):
-        self.coffee_shops = {}  # Хранение кофеен в словаре: {id: CoffeeShop}
+        self.coffee_shops = {}
 
     def add(self, coffee_shop):
         self.coffee_shops[coffee_shop.id] = coffee_shop

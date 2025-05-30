@@ -4,7 +4,6 @@ from modules.repository.mongo_repository import MongoRepository
 
 class UserService:
     def __init__(self, repository=None):
-        # Если репозиторий не передан, используем MongoRepository по умолчанию
         if repository is None:
             repository = MongoRepository(uri="mongodb://localhost:27017", db_name="my_database")
         self.repository = repository

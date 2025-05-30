@@ -4,33 +4,206 @@
     <meta charset="UTF-8" />
     <title>Избранные кофейни пользователя {{username}}</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .coffee-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
-        .coffee-card h3 { margin: 0 0 5px 0; }
-        .coffee-card p { margin: 0; color: #555; }
+       :root {
+  --bg: #faf8f5;
+  --accent: #7b5e57;
+  --text-primary: #3a2f2a;
+  --text-secondary: #6d615b;
+  --card-bg: #fffdfb;
+  --border-color: #d4c9c1;
+  --tag-bg: #cfc1b7;
+  --tag-text: #4a3c36;
+  --input-bg: #f4efe9;
+  --input-border: #b9a99a;
+  --btn-bg: #7b5e57;
+  --btn-hover-bg: #a3857e;
+  --btn-text: #fff;
+}
 
-        .tag {
-        display: inline-block;
-        background: #eef;
-        border-radius: 3px;
-        padding: 2px 6px;
-        margin: 2px 3px 2px 0;
-        font-size: 0.9em;
-        }
-        .tag-input {
-            margin-top: 5px;
-            padding: 4px;
-            font-size: 1em;
-        }
-        .add-tag-btn {
-            margin-left: 5px;
-            padding: 4px 8px;
-            font-size: 1em;
-            cursor: pointer;
-        }
+body {
+  background-color: var(--bg);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0 20px 25px 20px;
+}
+
+h1 {
+  text-align: center;
+  font-weight: 700;
+  margin-bottom: 35px;
+  color: var(--accent);
+}
+
+#favorites-container {
+  max-width: 850px;
+  margin: 0 auto;
+}
+
+.coffee-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px 22px;
+  margin-bottom: 18px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+  display: flex;
+  flex-direction: column;
+}
+
+.coffee-card h3 {
+  margin: 0 0 10px 0;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.coffee-card p {
+  margin: 0 0 8px 0;
+  color: var(--text-secondary);
+  font-size: 15px;
+}
+
+.tags-list {
+  margin-top: 10px;
+}
+
+.tag {
+  display: inline-block;
+  background-color: var(--tag-bg);
+  color: var(--tag-text);
+  border-radius: 20px;
+  padding: 5px 14px;
+  margin: 4px 8px 4px 0;
+  font-size: 0.9em;
+  font-weight: 600;
+  user-select: none;
+}
+
+.tag-input {
+  margin-top: 12px;
+  padding: 6px 10px;
+  font-size: 1em;
+  border: 1.5px solid var(--input-border);
+  border-radius: 6px;
+  background-color: var(--input-bg);
+  width: 60%;
+  max-width: 300px;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
+}
+
+.tag-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background-color: #fff;
+}
+
+.add-tag-btn {
+  margin-left: 8px;
+  padding: 6px 14px;
+  font-size: 1em;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  transition: background-color 0.3s ease;
+  user-select: none;
+}
+
+.add-tag-btn:hover {
+  background-color: var(--btn-hover-bg);
+}
+
+header {
+  background-color: var(--accent);
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  text-decoration: none;
+  color: white;
+  flex-shrink: 0;
+}
+
+nav {
+  display: flex;
+  gap: 20px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  text-decoration: none;
+}
+
+.auth {
+  flex-shrink: 0;
+}
+
+.auth a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.auth a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+
     </style>
 </head>
 <body>
+    <header>
+        <div class="nav-container">
+          <a href="/" class="logo">CoffeeMap</a>
+
+          <nav>
+            <a href="/home">Дом</a>
+            <a href="/friends">Друзья</a>
+            <a href="/favorites">Избранное</a>
+          </nav>
+
+          <div class="auth">
+            <a href="/logout">Выйти</a>
+          </div>
+        </div>
+      </header>
     <h1>Избранные кофейни пользователя {{username}}</h1>
     <div id="favorites-container">
         {{COFFEESHOPS_GO_HERE}}
@@ -78,6 +251,6 @@
 
 
     </script>
-        
+
 </body>
 </html>

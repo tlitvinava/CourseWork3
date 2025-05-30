@@ -15,5 +15,3 @@ class CoffeeShopService:
     def list_coffee_shops(self):
         shops = self.repository.list_all()
         return [shop.to_dict() for shop in shops]
-
-    # Дополнительно можно добавить методы для update, delete и get по id.

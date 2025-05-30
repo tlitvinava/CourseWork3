@@ -6,7 +6,7 @@ class CoffeeShop:
         self.id = str(uuid.uuid4())
         self.name = name
         self.address = address
-        self.attributes = attributes  # Дополнительные параметры: цена, меню, наличие Wi-Fi и т.д.
+        self.attributes = attributes
 
     def to_dict(self):
         return {

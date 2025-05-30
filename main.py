@@ -173,9 +173,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         username = self.get_current_user()
 
-        protected_paths = ['/','/index','/home']
-
-        protected_paths = ['/', '/index', '/home']
+        protected_paths = ['/','/index','/home','/favorites']
 
         if self.path.startswith('/login'):
             self.render_login()
@@ -191,6 +189,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
                     self.render_home()
                 elif self.path == '/home':
                     self.render_home()
+                elif self.path == '/favorites':
+                    self.render_favorites_page()
             else:
                 self.redirect('/login')
         else:
@@ -211,6 +211,67 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             'title': 'Добро пожаловать!'
         }
         self.serve_template(filepath, context)
+
+    def generate_favorite_list(self, username, favorites):
+        filepath = os.path.join(PAGES_DIR, 'favorites_template.html')
+        with open(filepath, 'r', encoding='utf-8') as f:
+            html_template = f.read()
+
+        coffee_cards = ""
+        for coffee in favorites:
+            tags = coffee.get('tags', {})
+            user_tags = coffee.get('user_tags', [])  # пользовательские теги (список строк)
+            name = tags.get('name', 'Без имени')
+            street = tags.get('addr:street', '')
+
+            # Формируем HTML для пользовательских тегов
+            tags_html = ""
+            for tag in user_tags:
+                tags_html += f"<span class='tag'>{tag}</span> "
+
+            coffee_cards += f"""
+                <div class='coffee-card' data-coffee-id='{coffee.get('id', '')}' data-coffee-type='{coffee.get('type', '')}'>
+                    <h3>{name}</h3>
+                    <p>{street}</p>
+                    <div class='tags-list'>{tags_html}</div>
+                    <input type='text' class='tag-input' placeholder='Новый тег' />
+                    <button class='add-tag-btn'>Добавить тег</button>
+                </div>
+                """
+
+
+        html = html_template.replace("{{COFFEESHOPS_GO_HERE}}", coffee_cards)
+        html = html.replace("{{username}}", username)
+        return html
+
+
+    def render_favorites_page(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
+
+        username = self.get_current_user()
+        if not username:
+            self.send_response(401)
+            self.end_headers()
+            self.wfile.write(b'{"error": "Unauthorized"}')
+            return
+
+        user = self.mongo_repo.get_user_by_username(username)
+        if not user:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b'{"error": "User not found"}')
+            return
+
+        favorites = user.favorites  # тут список кофеен из mongo
+
+        # Генерируем html с помощью твоей функции
+        html = self.generate_favorite_list(username, favorites)
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(html.encode('utf-8'))
 
 
     def get_overpass_coffee_shops(self):
@@ -296,8 +357,56 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.handle_add_coffee_shop()
         elif self.path == '/add_favorite':
             self.handle_add_favorite()
+        elif self.path == '/add_tag':
+            self.handle_add_tag()
         else:
             self.respond(404, "<h1>404</h1><p>Страница не найдена</p>")
+
+    def handle_add_tag(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
+
+        username = self.get_current_user()
+        if not username:
+            self.send_response(401)
+            self.end_headers()
+            self.wfile.write(b'{"error": "Unauthorized"}')
+            return
+
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+        try:
+            data = json.loads(body)
+            coffee_shop = data.get('coffee_shop')
+            tag = data.get('tag')
+
+            if not coffee_shop or not tag:
+                raise ValueError("Missing coffee_shop or tag in request body")
+
+            user = self.mongo_repo.get_user_by_username(username)
+            if not user:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b'{"error": "User not found"}')
+                return
+
+            # Вызываем update_tags с одним тегом
+            updated_user = self.mongo_repo.update_tags(user.id, coffee_shop, tag)
+            if not updated_user:
+                raise ValueError("User or favorite coffee shop not found")
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"message": "Тег добавлен"}).encode('utf-8'))
+
+        except Exception as e:
+            print(e)
+            self.send_response(400)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({"error": str(e)}).encode('utf-8'))
+
 
 
     def handle_add_favorite(self):

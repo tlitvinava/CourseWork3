@@ -19,8 +19,8 @@ class MongoRepository:
 
     def update_user(self, user):
         data = user.to_dict()
-        # Обновляем документ по идентификатору пользователя, создавая его, если его нет (upsert)
-        self.users_collection.replace_one({"id": user.id}, data, upsert=True)
+        result = self.users_collection.replace_one({"id": user.id}, data, upsert=True)
+        print(f"Modified count: {result.modified_count}")
         return user
 
     def get_user_by_username(self, username):
@@ -53,3 +53,64 @@ class MongoRepository:
                 self.update_user(user)
             return user
         return None
+
+    def get_favorites(self, user_id):
+        user = self.get_user_by_id(user_id)
+        if user:
+            return user.favorites
+        return []
+
+    def update_tags(self, user_id, coffee_shop, new_tag):
+        coffee_id = coffee_shop.get('id')
+        coffee_type = coffee_shop.get('type')
+
+        try:
+            coffee_id = int(coffee_id)
+        except ValueError:
+            pass
+
+        if not coffee_id or not coffee_type:
+            return None
+
+        user = self.get_user_by_id(user_id)
+        if not user:
+            return None
+
+        # Найти нужную кофейню и получить существующие теги
+        existing_tags = []
+        for fav in user.favorites:
+            if fav.get('id') == coffee_id:
+                existing_tags = fav.get('user_tags', [])
+                break
+
+        # Добавить тег, если его нет
+        if new_tag not in existing_tags:
+            existing_tags.append(new_tag)
+
+        # Обновляем только user_tags для этой кофейни
+        result = self.users_collection.update_one(
+            {
+                "id": user_id,
+                "favorites.id": coffee_id,
+            },
+            {
+                "$set": {
+                    "favorites.$.user_tags": existing_tags
+                }
+            }
+        )
+
+        if result.modified_count == 0:
+            print("Не удалось обновить теги")
+            return None
+
+        print("Теги успешно обновлены:", existing_tags)
+        return self.get_user_by_id(user_id)
+
+
+
+
+
+
+
+

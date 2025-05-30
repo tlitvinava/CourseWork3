@@ -2,7 +2,7 @@
 import uuid
 
 class User:
-    def __init__(self, username, password, phone, email, region, favorites=None, id=None):
+    def __init__(self, username, password, phone, email, region, favorites=None, friends = None, id=None):
         self.id = id if id is not None else str(uuid.uuid4())
         self.username = username
         self.password = password  # В реальном проекте пароль необходимо хэшировать!
@@ -10,6 +10,7 @@ class User:
         self.email = email
         self.region = region
         self.favorites = favorites if favorites is not None else []
+        self.friends = friends if friends is not None else []
 
     def to_dict(self):
         return {
@@ -19,7 +20,8 @@ class User:
             "phone": self.phone,
             "email": self.email,
             "region": self.region,
-            "favorites": self.favorites
+            "favorites": self.favorites,
+            "friends": self.friends,
         }
 
     @classmethod
@@ -31,5 +33,6 @@ class User:
             email=d.get("email"),
             region=d.get("region"),
             favorites=d.get("favorites", []),
-            id=d.get("id")
+            id=d.get("id"),
+            friends=d.get("friends", []),
         )

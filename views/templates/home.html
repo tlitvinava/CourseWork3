@@ -10,7 +10,13 @@
 </head>
 <body>
   <h1>Добро пожаловать!</h1>
-  
+  <div id="friend-block" style="margin-top: 20px;">
+    <h2>Добавить друга</h2>
+    <input type="text" id="friend-username-input" placeholder="Имя пользователя">
+    <button id="add-friend-btn">Добавить</button>
+    <div id="friend-message" style="margin-top: 10px; color: green;"></div>
+  </div>
+
   <h2>Поиск кофейни</h2>
   <input type="text" id="searchInput" placeholder="Введите название кофейни">
   <button id="searchButton">Поиск</button>
@@ -142,6 +148,36 @@
         alert("Ошибка: " + err.message);
       });
   });
+
+  document.getElementById('add-friend-btn').addEventListener('click', () => {
+    const input = document.getElementById('friend-username-input');
+    const message = document.getElementById('friend-message');
+    const friendUsername = input.value.trim();
+
+    if (!friendUsername) {
+      alert('Введите имя друга');
+      return;
+    }
+
+    fetch('/add_friend', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ friend_username: friendUsername })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Ошибка при добавлении друга');
+      return res.json();
+    })
+    .then(data => {
+      message.textContent = data.message || 'Друг добавлен!';
+      input.value = '';
+    })
+    .catch(err => {
+      message.style.color = 'red';
+      message.textContent = err.message;
+    });
+  });
+
 </script>
 
 

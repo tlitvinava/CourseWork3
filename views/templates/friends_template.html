@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Друзья и их любимые кофейни</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .coffee-card { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+    .coffee-card h3 { margin: 0 0 5px 0; }
+    .coffee-card p { margin: 0; color: #555; }
+    .tag {
+      display: inline-block;
+      background: #eef;
+      border-radius: 3px;
+      padding: 2px 6px;
+      margin: 2px 3px 2px 0;
+      font-size: 0.9em;
+    }
+    hr {
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Друзья и их любимые кофейни</h1>
+  <div id="friends-container">
+    {{FRIENDS_GO_HERE}}
+  </div>
+</body>
+</html>

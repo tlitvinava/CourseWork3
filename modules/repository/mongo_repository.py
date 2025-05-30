@@ -108,6 +108,13 @@ class MongoRepository:
         return self.get_user_by_id(user_id)
 
 
+    def update_user_friends(self, user_id, friends_list):
+        result = self.users_collection.update_one(
+            {"id": user_id},
+            {"$set": {"friends": friends_list}}
+        )
+        return result.modified_count > 0
+
 
 
 

@@ -173,7 +173,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
         username = self.get_current_user()
 
-        protected_paths = ['/','/index','/home','/favorites']
+        protected_paths = ['/','/index','/home','/favorites', '/friends']
 
         if self.path.startswith('/login'):
             self.render_login()
@@ -191,6 +191,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
                     self.render_home()
                 elif self.path == '/favorites':
                     self.render_favorites_page()
+                elif self.path == '/friends':
+                    self.render_friends_page()
             else:
                 self.redirect('/login')
         else:
@@ -243,6 +245,59 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         html = html_template.replace("{{COFFEESHOPS_GO_HERE}}", coffee_cards)
         html = html.replace("{{username}}", username)
         return html
+
+
+    def render_friends_page(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
+        username = self.get_current_user()
+        if not username:
+            self.respond(401, 'Unauthorized')
+            return
+
+        current_user = self.mongo_repo.get_user_by_username(username)
+        if not current_user:
+            self.respond(404, 'User not found')
+            return
+
+        friends_data_html = ""
+        for friend_username in current_user.friends:
+            friend = self.mongo_repo.get_user_by_username(friend_username)
+            if not friend:
+                continue
+
+            coffee_cards = ""
+            for coffee in friend.favorites:
+                tags = coffee.get('tags', {})
+                user_tags = coffee.get('user_tags', [])
+                name = tags.get('name', 'Без имени')
+                street = tags.get('addr:street', '')
+
+                tags_html = ''.join(f"<span class='tag'>{tag}</span> " for tag in user_tags)
+
+                coffee_cards += f"""
+                <div class='coffee-card' data-coffee-id='{coffee.get('id', '')}' data-coffee-type='{coffee.get('type', '')}'>
+                    <h3>{name}</h3>
+                    <p>{street}</p>
+                    <div class='tags-list'>{tags_html}</div>
+                </div>
+                """
+
+            friends_data_html += f"""
+            <h2>Друг: {friend.username}</h2>
+            {coffee_cards}
+            <hr/>
+            """
+
+        with open(os.path.join(PAGES_DIR, 'friends_template.html'), 'r', encoding='utf-8') as f:
+            html_template = f.read()
+
+        html = html_template.replace("{{FRIENDS_GO_HERE}}", friends_data_html)
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html; charset=utf-8')
+        self.end_headers()
+        self.wfile.write(html.encode('utf-8'))
 
 
     def render_favorites_page(self):
@@ -359,6 +414,8 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.handle_add_favorite()
         elif self.path == '/add_tag':
             self.handle_add_tag()
+        elif self.path == '/add_friend':
+            self.handle_add_friend()
         else:
             self.respond(404, "<h1>404</h1><p>Страница не найдена</p>")
 
@@ -517,6 +574,38 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         response = {'success': True, 'message': 'Успешный вход', 'redirect': '/'}
         self.wfile.write(json.dumps(response).encode('utf-8'))
+
+    def handle_add_friend(self):
+        if not hasattr(self, 'mongo_repo'):
+            self.mongo_repo = MongoRepository()
+        content_length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(content_length)
+        try:
+            data = json.loads(body)
+            friend_username = data.get('friend_username')
+            username = self.get_current_user()
+
+            if not friend_username or not username:
+                raise ValueError("Недостаточно данных")
+
+            user = self.mongo_repo.get_user_by_username(username)
+            friend = self.mongo_repo.get_user_by_username(friend_username)
+
+            if not user or not friend:
+                self.respond_json({"error": "Пользователь не найден"}, 404)
+                return
+
+            if friend_username not in user.friends:
+                user.friends.append(friend_username)
+                # Обновляем в базе друзей через mongo_repo
+                self.mongo_repo.update_user_friends(user.id, user.friends)
+
+            self.respond_json({"message": "Друг добавлен"}, 200)
+        except Exception as e:
+            print(e)
+            self.respond_json({"error": str(e)}, 400)
+
+
 
     def handle_add_coffee_shop(self):
         length = int(self.headers.get('Content-Length', 0))

@@ -13,18 +13,17 @@ from modules.models.user import User
 
 from modules.services.user_service import UserService
 from modules.services.overpass_api_service import OverpassAPIService
+from modules.handlers.handlers import PathHandlerABC
+from pymongo_quickstart.quickstart import get_actual_mongo_data
 
 PORT = 8000
-
-
-user_service = UserService()
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-PAGES_DIR = os.path.join(BASE_DIR, 'views', 'templates')
 
 sessions = {}
 
 class RequestHandler(http.server.BaseHTTPRequestHandler):
+
+    post_paths: dict[str, callable] = {}
+    get_paths: dict[str, callable] = {}
 
     def get_current_user(self):
         cookie_header = self.headers.get('Cookie')
@@ -38,7 +37,17 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
     """GET part"""
     def do_GET(self):
+        parsed_path = urlparse(self.path)
+        path_only = parsed_path.path
 
+        print(self.path)
+        g = PathHandlerABC.get_handlers.get(path_only, None)
+        print(g)
+        if g is None:
+            return 404
+        g.handle(request=self)
+
+        '''
         username = self.get_current_user()
 
         protected_paths = ['/','/index','/home','/favorites', '/friends']
@@ -65,7 +74,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
                 self.redirect('/login')
         else:
             self.respond(404, "<h1>404</h1><p>Страница не найдена</p>")
-
+'''
     def render_index(self):
         filepath = os.path.join(PAGES_DIR, 'index.html')
         context = {
@@ -240,6 +249,13 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
 
     """POST part"""
     def do_POST(self):
+        print(self.path)
+        p = PathHandlerABC.post_handlers.get(self.path, None)
+        print(p)
+        if p is None:
+            return 404
+        p.handle(request=self)
+        """
         if self.path == '/login':
             self.handle_login()
         elif self.path == '/registration':
@@ -254,6 +270,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
             self.handle_add_friend()
         else:
             self.respond(404, "<h1>404</h1><p>Страница не найдена</p>")
+"""
 
     def handle_add_tag(self):
         if not hasattr(self, 'mongo_repo'):
@@ -494,6 +511,7 @@ class RequestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
 
 def run_server():
+    #get_actual_mongo_data()
     with socketserver.TCPServer(("", PORT), RequestHandler) as httpd:
         print("Сервер запущен на порту {}...".format(PORT))
         try:

@@ -208,49 +208,89 @@ nav a:hover {
     <div id="favorites-container">
         {{COFFEESHOPS_GO_HERE}}
     </div>
+
+
     <script>
-        document.querySelectorAll('.add-tag-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-        const card = btn.closest('.coffee-card');
-        const coffeeId = card.getAttribute('data-coffee-id');
-        const coffeeType = card.getAttribute('data-coffee-type');
-        const input = card.querySelector('.tag-input');
-        const newTag = input.value.trim();
+      document.addEventListener('DOMContentLoaded', () => {
 
-        if (!newTag) {
-            alert('Введите тег');
-            return;
-        }
+          document.querySelectorAll('.add-tag-btn').forEach(btn => {
+              btn.addEventListener('click', async () => {
+                  const card = btn.closest('.coffee-card');
+                  const coffeeId = card.getAttribute('data-coffee-id');
+                  const input = card.querySelector('.tag-input');
+                  const newTag = input.value.trim();
+      
+                  if (!newTag) {
+                      alert('Введите тег');
+                      return;
+                  }
+      
+                  try {
+                      const res = await fetch('/add_tag', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                              coffee_id: coffeeId,
+                              tag: newTag
+                          })
+                      });
+      
+                      if (!res.ok) throw new Error('Ошибка при добавлении тега');
+      
+                      const tagSpan = document.createElement('span');
+                      tagSpan.className = 'tag';
+                      tagSpan.innerHTML = `
+                          ${newTag}
+                          <button class="remove-tag-btn" data-tag="${newTag}" title="Удалить тег">×</button>
+                      `;
+      
+                      card.querySelector('.tags-list').appendChild(tagSpan);
+                      input.value = '';
+                      attachRemoveHandlers();
+                  } catch (err) {
+                      alert(err.message);
+                  }
+              });
+          });
+      
 
-        fetch('/add_tag', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                coffee_shop: {
-                    id: coffeeId,
-                    type: coffeeType
-                },
-                tag: newTag
-            })
-        })
-        .then(res => {
-            if (!res.ok) throw new Error('Ошибка при добавлении тега');
-            return res.json();
-        })
-        .then(data => {
-            const tagsList = card.querySelector('.tags-list');
-            const tagSpan = document.createElement('span');
-            tagSpan.className = 'tag';
-            tagSpan.textContent = newTag;
-            tagsList.appendChild(tagSpan);
-            input.value = '';
-        })
-        .catch(err => alert(err.message));
-    });
-});
-
-
-    </script>
+          function attachRemoveHandlers() {
+              document.querySelectorAll('.remove-tag-btn').forEach(btn => {
+                  btn.removeEventListener('click', handleRemove);
+                  btn.addEventListener('click', handleRemove);
+              });
+          }
+      
+          async function handleRemove(e) {
+              const btn = e.target;
+              const tag = btn.getAttribute('data-tag');
+              const card = btn.closest('.coffee-card');
+              const coffeeId = card.getAttribute('data-coffee-id');
+      
+              if (!confirm(`Удалить тег "${tag}"?`)) return;
+      
+              try {
+                  const res = await fetch('/remove_tag', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                          coffee_id: coffeeId,
+                          tag: tag
+                      })
+                  });
+      
+                  if (!res.ok) throw new Error('Ошибка при удалении тега');
+      
+                  btn.parentElement.remove();
+              } catch (err) {
+                  alert(err.message);
+              }
+          }
+      
+          attachRemoveHandlers();
+      });
+      </script>
+      
 
 </body>
 </html>

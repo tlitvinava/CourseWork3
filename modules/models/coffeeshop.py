@@ -2,16 +2,12 @@
 import uuid
 
 class CoffeeShop:
-    def __init__(self, name, address, **attributes):
-        self.id = str(uuid.uuid4())
-        self.name = name
-        self.address = address
-        self.attributes = attributes
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "address": self.address,
-            "attributes": self.attributes
-        }
+    __non_recursive_fields__ = ["data"]
+
+    def __init__(self, id , lat, lon, data, **attributes):
+        self.id = id if id is not None else str(uuid.uuid4())
+        self.lat = lat
+        self.lon = lon
+        self.data = data
+

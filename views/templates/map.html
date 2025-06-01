@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+
+    :root {
+  --bg: #faf8f5;
+  --accent: #7b5e57;
+  --text-primary: #3a2f2a;
+  --text-secondary: #6d615b;
+  --card-bg: #fffdfb;
+  --border-color: #d4c9c1;
+  --tag-bg: #cfc1b7;
+  --tag-text: #4a3c36;
+  --input-bg: #f4efe9;
+  --input-border: #b9a99a;
+  --btn-bg: #7b5e57;
+  --btn-hover-bg: #a3857e;
+  --btn-text: #fff;
+}
+
+    header {
+  background-color: var(--accent);
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: bold;
+  text-decoration: none;
+  color: white;
+  flex-shrink: 0;
+}
+
+nav {
+  display: flex;
+  gap: 20px;
+  flex-grow: 1;
+  justify-content: center;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  text-decoration: none;
+}
+
+.auth {
+  flex-shrink: 0;
+}
+
+body {
+  background-color: var(--bg);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+}
+
+.auth a {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: background-color 0.3s ease;
+}
+
+.auth a:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+    </style>
+</head>
+<body>
+    <header>
+        <div class="nav-container">
+          <a href="/" class="logo">CoffeeMap</a>
+
+          <nav>
+            <a href="/home">Дом</a>
+            <a href="/friends">Друзья</a>
+            <a href="/favorites">Избранное</a>
+            <a href="/map">Карта</a>
+          </nav>
+
+          <div class="auth">
+            <a href="/logout">Выйти</a>
+          </div>
+        </div>
+      </header>
+    </div>
+    <div class="container">
+        <div id="map" style="height: 800px; margin-bottom: 20px;"></div>
+    </div>
+</body>
+
+
+<script>
+  const favoriteCoffeeShops = {{favorite_shops_json}};
+
+  const map = L.map('map').setView([53.9, 27.5667], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  favoriteCoffeeShops.forEach(shop => {
+    L.marker([shop.lat, shop.lon])
+      .addTo(map)
+      .bindPopup(`<b>${shop.name}</b>`);
+  });
+</script>

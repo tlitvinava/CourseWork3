@@ -575,3 +575,41 @@ class RemoveFavoriteHandler(PathHandlerABC, BaseHandler):
             BaseHandler.respond_json(request, {"message": "Кофейня удалена из избранного"})
         except Exception as e:
             BaseHandler.respond_json(request, {"message": f"Ошибка: {str(e)}"}, status=400)
+
+class RenderMap(PathHandlerABC, BaseHandler):
+    path = '/map'
+    method = 'GET'
+    context = {}
+
+    @staticmethod
+    def handle(request):
+        user = BaseHandler.get_current_user_or_404(request)
+        cs = CoffeeShopService()
+
+        favorite_shops = []
+
+        for favorite in user.favorites:
+            coffee = cs.get_coffee_shop_by_id(int(favorite.get("id")))
+            print(coffee)
+            if not coffee:
+                continue
+
+            data = coffee.data
+            lat = coffee.lat
+            lon = coffee.lon
+            name = data.get("name", "Без имени")
+
+            if lat is not None and lon is not None:
+                favorite_shops.append({
+                    "name": name.replace("'", "\\'"),
+                    "lat": lat,
+                    "lon": lon
+                })
+
+        favorite_shops_json = json.dumps(favorite_shops, ensure_ascii=False)
+
+        context = {
+            "favorite_shops_json" : favorite_shops_json
+        }
+
+        BaseHandler.serve_template(request, 'map.html', context)

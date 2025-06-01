@@ -265,6 +265,7 @@ class RenderFavoriteCoffeeShopsPage(PathHandlerABC, BaseHandler):
 
             coffee_cards += f"""
                 <div class='coffee-card' data-coffee-id='{coffee_id}'>
+                    <button class='remove-coffee-btn' title='Удалить кофейню'>×</button>
                     <h3>{name}</h3>
                     <p>{address}</p>
                     <div class='tags-list'>{tags_html}</div>
@@ -502,7 +503,9 @@ class RenderFriendsPage(PathHandlerABC, BaseHandler):
                 """
 
             friends_data_html += f"""
-            <h2>Друг: {friend.username}</h2>
+            <h2>Друг: {friend.username}
+            <button class='remove-friend-btn' data-username='{friend.username}' style='margin-left: 10px; color: red; border: none; background: none; cursor: pointer;'>✖</button>
+            </h2>
             {coffee_cards}
             <hr/>
             """
@@ -523,3 +526,52 @@ class RenderFriendsPage(PathHandlerABC, BaseHandler):
 
         BaseHandler.serve_template(request, 'friends_template.html', context)
 
+
+class RemoveFriendHandler(PathHandlerABC, BaseHandler):
+    path = '/remove_friend'
+    method = 'POST'
+    context = {}
+
+    @staticmethod
+    def handle(request):
+        user = BaseHandler.get_current_user_or_404(request)
+
+        try:
+            content_length = int(request.headers.get('Content-Length', 0))
+            body = request.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+
+            friend_username = data.get('friend_username')
+            if not friend_username:
+                raise ValueError("Не указано имя друга")
+
+            if friend_username in user.friends:
+                UserService().remove_friend(user.id, friend_username)
+
+            BaseHandler.respond_json(request, {"message": "Друг удалён"})
+        except Exception as e:
+            BaseHandler.respond_json(request, {"message": f"Ошибка: {str(e)}"}, status=400)
+
+
+class RemoveFavoriteHandler(PathHandlerABC, BaseHandler):
+    path = '/remove_favorite'
+    method = 'POST'
+    context = {}
+
+    @staticmethod
+    def handle(request):
+        user = BaseHandler.get_current_user_or_404(request)
+
+        try:
+            content_length = int(request.headers.get('Content-Length', 0))
+            body = request.rfile.read(content_length).decode('utf-8')
+            data = json.loads(body)
+            coffee_id = int(data.get('coffee_id'))
+
+            if not coffee_id:
+                raise ValueError("Не указан ID кофейни")
+
+            UserService().remove_favorite(user.id, coffee_id)
+            BaseHandler.respond_json(request, {"message": "Кофейня удалена из избранного"})
+        except Exception as e:
+            BaseHandler.respond_json(request, {"message": f"Ошибка: {str(e)}"}, status=400)

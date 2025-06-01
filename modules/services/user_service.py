@@ -83,6 +83,15 @@ class UserService:
             self.user_repository.update_user(user)
         return user
 
+    def remove_friend(self, user_id, friend_name):
+        user = self.user_repository.get_user_by_id(user_id)
+        print(f"{friend_name} in {user.friends}")
+        if friend_name in user.friends:
+            user.friends.remove(friend_name)
+            self.user_repository.update_user(user)
+            print("Обновлённый список друзей:", user.friends)
+        return user
+
     def get_user_by_username(self, username):
         return self.user_repository.get_user_by_username(username)
 
@@ -91,3 +100,8 @@ class UserService:
 
     def user_exists(self, username):
         return self.user_repository.get_user_by_username(username) is not None
+
+    def remove_favorite(self, user_id, coffee_id):
+        user = self.user_repository.get_user_by_id(user_id)
+        user.favorites = [fav for fav in user.favorites if fav.get('id') != coffee_id]
+        self.user_repository.update_user(user)

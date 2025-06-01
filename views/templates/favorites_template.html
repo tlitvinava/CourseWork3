@@ -185,6 +185,27 @@ nav a:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
 
+.remove-coffee-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: #a9746e;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.remove-coffee-btn:hover {
+  color: #8d5c57;
+}
+
+.coffee-card {
+  position: relative;
+}
+
 
     </style>
 </head>
@@ -289,6 +310,31 @@ nav a:hover {
       
           attachRemoveHandlers();
       });
+
+
+      document.addEventListener('click', function (event) {
+  if (event.target.classList.contains('remove-coffee-btn')) {
+    const card = event.target.closest('.coffee-card');
+    const coffeeId = card.getAttribute('data-coffee-id');
+
+    if (confirm('Удалить эту кофейню из избранного?')) {
+      fetch('/remove_favorite', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ coffee_id: coffeeId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        alert(data.message);
+        location.reload();
+      })
+      .catch(err => {
+        alert('Ошибка при удалении: ' + err.message);
+      });
+    }
+  }
+});
+
       </script>
       
 

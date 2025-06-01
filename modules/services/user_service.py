@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from modules.models.user import User
 from modules.repository.user_repository import UserRepository
 from modules.services.coffee_shop_service import CoffeeShopService

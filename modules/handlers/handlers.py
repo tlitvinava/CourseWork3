@@ -83,6 +83,12 @@ class BaseHandler():
 
         return us.get_user_by_username(username)
 
+    @staticmethod
+    def redirect(request, location):
+        request.send_response(302)
+        request.send_header('Location', location)
+        request.end_headers()
+
 
 class RenderRegistrstionPage(PathHandlerABC, BaseHandler):
     path = '/registration'
@@ -238,7 +244,7 @@ class RenderFavoriteCoffeeShopsPage(PathHandlerABC, BaseHandler):
             coffee_id = favorite.get("id")
             user_tags = favorite.get("user_tags", [])
 
-            coffee = cs.get_coffee_shop_by_id(coffee_id)  # исправлено
+            coffee = cs.get_coffee_shop_by_id(coffee_id)
             if not coffee:
                 continue
 
@@ -295,7 +301,6 @@ class AddTagsHandler(PathHandlerABC, BaseHandler):
         if not user:
             return BaseHandler.respond_json(request, {"error": "Не авторизован"}, status=401)
 
-        # Чтение и парсинг тела запроса
         try:
             length = int(request.headers.get("Content-Length", 0))
             body = request.rfile.read(length).decode("utf-8")
@@ -307,7 +312,6 @@ class AddTagsHandler(PathHandlerABC, BaseHandler):
             if not coffee_id or not tag:
                 return BaseHandler.respond_json(request, {"error": "Отсутствует coffee_id или tag"}, status=400)
 
-            # Обновление тегов пользователя через UserService
             user_service = UserService()
             success = user_service.add_tag_to_favorite(user.id, coffee_id, tag)
 

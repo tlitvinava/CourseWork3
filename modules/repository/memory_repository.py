@@ -8,8 +8,6 @@ class InMemoryRepository:
             cls.instance.sessions = {}
         return cls.instance
 
-
-
     def save(self, session_id, username):
         self.sessions[session_id] = username
 

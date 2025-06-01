@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from modules.models.coffeeshop import CoffeeShop
 from modules.repository.coffee_repository import CoffeeShopRepository
 
